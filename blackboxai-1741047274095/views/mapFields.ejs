@@ -1,139 +1,160 @@
-<div class="container mt-5">
-    <div class="row justify-content-center">
+<div class="container mt-4">
+    <div class="row">
         <div class="col-md-8">
-            <form action="/process" method="post">
-                <input type="hidden" name="filePath" value="<%= filePath %>">
-                <input type="hidden" name="vendorName" value="<%= vendorName %>">
-                
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="mb-0">Map Fields</h5>
-                        <small class="text-muted">Match your CSV columns to our database fields</small>
-                    </div>
-                    <div class="card-body">
-                        <% if (typeof error !== 'undefined' && error) { %>
-                            <div class="alert alert-danger">
-                                <%= error %>
-                            </div>
-                        <% } %>
-
-                        <% if (typeof columnNames !== 'undefined' && columnNames.length > 0) { %>
-                            <% columnNames.forEach(dbField => { %>
-                                <div class="form-group row mb-3">
-                                    <label class="col-sm-3 col-form-label">
-                                        <%= dbField.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) %>:
-                                    </label>
-                                    <div class="col-sm-9">
-                                        <select name="<%= dbField %>" class="form-control">
-                                            <option value="">Select CSV field</option>
-                                            <% if (typeof headers !== 'undefined' && Array.isArray(headers)) { %>
-                                                <% headers.forEach(header => { %>
-                                                    <option value="<%= header %>" <%= header.toLowerCase() === dbField.toLowerCase() ? 'selected' : '' %>>
-                                                        <%= header %>
-                                                    </option>
-                                                <% }); %>
-                                            <% } %>
-                                        </select>
-                                    </div>
-                                </div>
-                            <% }); %>
-
-                            <div class="text-end mt-4">
-                                <a href="/" class="btn btn-secondary me-2">
-                                    <i class="bi bi-arrow-left"></i> Back
-                                </a>
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="bi bi-check2"></i> Process Data
-                                </button>
-                            </div>
-                        <% } else { %>
-                            <div class="alert alert-warning">
-                                No database fields available for mapping.
-                                <a href="/" class="btn btn-primary mt-3">
-                                    <i class="bi bi-arrow-left"></i> Return to Upload
-                                </a>
-                            </div>
-                        <% } %>
-                    </div>
-                </div>
-            </form>
-
-            <!-- Field Description Card -->
-            <div class="card mt-4">
+            <div class="card">
                 <div class="card-header">
-                    <h5 class="mb-0">Field Descriptions</h5>
+                    <h4 class="mb-0">Map CSV Fields</h4>
                 </div>
                 <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-sm">
-                            <thead>
-                                <tr>
-                                    <th>Field</th>
-                                    <th>Description</th>
-                                    <th>Example</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>First Name</td>
-                                    <td>Contact's first name</td>
-                                    <td>John</td>
-                                </tr>
-                                <tr>
-                                    <td>Last Name</td>
-                                    <td>Contact's last name</td>
-                                    <td>Doe</td>
-                                </tr>
-                                <tr>
-                                    <td>Phone 1-4</td>
-                                    <td>Contact phone numbers</td>
-                                    <td>123-456-7890</td>
-                                </tr>
-                                <tr>
-                                    <td>Address 1</td>
-                                    <td>Primary street address</td>
-                                    <td>123 Main St</td>
-                                </tr>
-                                <tr>
-                                    <td>Address 2</td>
-                                    <td>Secondary address (apt, suite, etc.)</td>
-                                    <td>Suite 100</td>
-                                </tr>
-                                <tr>
-                                    <td>City</td>
-                                    <td>City name</td>
-                                    <td>San Francisco</td>
-                                </tr>
-                                <tr>
-                                    <td>State</td>
-                                    <td>State abbreviation</td>
-                                    <td>CA</td>
-                                </tr>
-                                <tr>
-                                    <td>Region</td>
-                                    <td>Geographic region or area</td>
-                                    <td>Bay Area</td>
-                                </tr>
-                                <tr>
-                                    <td>Zipcode</td>
-                                    <td>Postal code</td>
-                                    <td>94105</td>
-                                </tr>
-                                <tr>
-                                    <td>Latitude</td>
-                                    <td>Geographic latitude</td>
-                                    <td>37.7749</td>
-                                </tr>
-                                <tr>
-                                    <td>Longitude</td>
-                                    <td>Geographic longitude</td>
-                                    <td>-122.4194</td>
-                                </tr>
-                            </tbody>
-                        </table>
+                    <% if (error) { %>
+                        <div class="alert alert-danger">
+                            <%= error %>
+                        </div>
+                    <% } %>
+                    <form action="/upload/map" method="post">
+                        <input type="hidden" name="fileId" value="<%= fileId %>">
+                        <input type="hidden" name="vendorName" value="<%= vendorName %>">
+                        
+                        <div class="alert alert-info">
+                            <h6>Required Fields:</h6>
+                            <ul class="mb-0">
+                                <li><code>phone1</code> - Primary phone number</li>
+                                <li>At least one field must be mapped</li>
+                            </ul>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>CSV Column</th>
+                                        <th>Map To</th>
+                                        <th>Sample Data</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <% if (csvHeaders && csvHeaders.length > 0) { %>
+                                        <% csvHeaders.forEach((header, index) => { %>
+                                            <tr>
+                                                <td><%= header %></td>
+                                                <td>
+                                                    <select name="mapping[<%= header %>]" class="form-select">
+                                                        <option value="">Do not import</option>
+                                                        <% columnNames.forEach(column => { %>
+                                                            <option value="<%= column %>" 
+                                                                <%= header.toLowerCase() === column.toLowerCase() ? 'selected' : '' %>>
+                                                                <%= column %>
+                                                            </option>
+                                                        <% }); %>
+                                                    </select>
+                                                </td>
+                                                <td>
+                                                    <% if (sampleData && sampleData[header]) { %>
+                                                        <small class="text-muted"><%= sampleData[header] %></small>
+                                                    <% } %>
+                                                </td>
+                                            </tr>
+                                        <% }); %>
+                                    <% } else { %>
+                                        <tr>
+                                            <td colspan="3" class="text-center text-muted">
+                                                No CSV headers found
+                                            </td>
+                                        </tr>
+                                    <% } %>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="text-end mt-3">
+                            <a href="/upload" class="btn btn-secondary me-2">Cancel</a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check2"></i> Confirm Mapping
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Preview Panel -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">File Details</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4">File Name</dt>
+                        <dd class="col-sm-8"><%= originalFilename %></dd>
+
+                        <dt class="col-sm-4">Vendor</dt>
+                        <dd class="col-sm-8"><%= vendorName %></dd>
+
+                        <dt class="col-sm-4">Total Rows</dt>
+                        <dd class="col-sm-8"><%= totalRows %></dd>
+
+                        <dt class="col-sm-4">Columns</dt>
+                        <dd class="col-sm-8"><%= csvHeaders ? csvHeaders.length : 0 %></dd>
+                    </dl>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="mb-0">Available Fields</h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        <% columnNames.forEach(column => { %>
+                            <div class="list-group-item">
+                                <code><%= column %></code>
+                                <% if (column === 'phone1') { %>
+                                    <span class="badge bg-danger ms-1">Required</span>
+                                <% } %>
+                            </div>
+                        <% }); %>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Prevent duplicate mappings
+    const selects = document.querySelectorAll('select[name^="mapping"]');
+    selects.forEach(select => {
+        select.addEventListener('change', function() {
+            const selectedValue = this.value;
+            if (!selectedValue) return;
+
+            selects.forEach(otherSelect => {
+                if (otherSelect !== this && otherSelect.value === selectedValue) {
+                    otherSelect.value = '';
+                }
+            });
+        });
+    });
+
+    // Form validation
+    const form = document.querySelector('form');
+    form.addEventListener('submit', function(event) {
+        const phone1Mapped = Array.from(selects).some(select => select.value === 'phone1');
+        
+        if (!phone1Mapped) {
+            event.preventDefault();
+            alert('You must map a column to phone1');
+            return;
+        }
+
+        const hasMapping = Array.from(selects).some(select => select.value);
+        if (!hasMapping) {
+            event.preventDefault();
+            alert('You must map at least one column');
+            return;
+        }
+    });
+});
+</script>
