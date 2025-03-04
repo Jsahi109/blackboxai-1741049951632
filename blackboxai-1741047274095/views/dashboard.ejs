@@ -1,0 +1,222 @@
+<div class="container-fluid py-4">
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-sm-6 mb-xl-0 mb-4">
+            <div class="card">
+                <div class="card-body stat-card">
+                    <i class="bi bi-file-earmark-text"></i>
+                    <div class="stat-value"><%= stats.totalRecords %></div>
+                    <div class="stat-label">Total Records</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-sm-6 mb-xl-0 mb-4">
+            <div class="card">
+                <div class="card-body stat-card">
+                    <i class="bi bi-building"></i>
+                    <div class="stat-value"><%= stats.vendorStats.length %></div>
+                    <div class="stat-label">Active Vendors</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-sm-6 mb-xl-0 mb-4">
+            <div class="card">
+                <div class="card-body stat-card">
+                    <i class="bi bi-check-circle"></i>
+                    <div class="stat-value"><%= stats.qualityMetrics.phoneCompleteness %>%</div>
+                    <div class="stat-label">Phone Completeness</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-sm-6">
+            <div class="card">
+                <div class="card-body stat-card">
+                    <i class="bi bi-geo-alt"></i>
+                    <div class="stat-value"><%= stats.qualityMetrics.addressCompleteness %>%</div>
+                    <div class="stat-label">Address Completeness</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row mb-4">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Upload Trends</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="uploadChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Records by Vendor</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="vendorChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity and Map -->
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Recent Activity</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Vendor</th>
+                                    <th>Records</th>
+                                    <th>Upload Date</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% stats.recentUploads.forEach(upload => { %>
+                                <tr>
+                                    <td><%= upload.vendor_name %></td>
+                                    <td><%= upload.count %></td>
+                                    <td><%= new Date(upload.upload_date).toLocaleDateString() %></td>
+                                    <td><span class="badge badge-success">Completed</span></td>
+                                </tr>
+                                <% }); %>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Geographic Distribution</h5>
+                </div>
+                <div class="card-body">
+                    <div id="locationMap" style="height: 300px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <a href="/" class="btn btn-primary btn-block">
+                                <i class="bi bi-upload"></i> Upload New Data
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <button onclick="exportData('csv')" class="btn btn-success btn-block">
+                                <i class="bi bi-file-earmark-spreadsheet"></i> Export to CSV
+                            </button>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="/analytics" class="btn btn-info btn-block">
+                                <i class="bi bi-graph-up"></i> View Analytics
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="/records" class="btn btn-secondary btn-block">
+                                <i class="bi bi-table"></i> View All Records
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Initialize charts with the server-side data
+    document.addEventListener('DOMContentLoaded', function() {
+        // Upload Trends Chart
+        const uploadData = JSON.parse('<%- JSON.stringify(stats.chartData.uploads) %>');
+        const uploadDates = Object.keys(uploadData);
+        const uploadCounts = Object.values(uploadData);
+
+        new Chart(document.getElementById('uploadChart'), {
+            type: 'line',
+            data: {
+                labels: uploadDates,
+                datasets: [{
+                    label: 'Records Uploaded',
+                    data: uploadCounts,
+                    borderColor: '#3498db',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    title: {
+                        display: true,
+                        text: 'Upload Trends'
+                    }
+                }
+            }
+        });
+
+        // Vendor Distribution Chart
+        const vendorData = JSON.parse('<%- JSON.stringify(stats.chartData.vendors) %>');
+        new Chart(document.getElementById('vendorChart'), {
+            type: 'doughnut',
+            data: {
+                labels: vendorData.map(v => v.name),
+                datasets: [{
+                    data: vendorData.map(v => v.count),
+                    backgroundColor: ['#3498db', '#2ecc71', '#e74c3c', '#f1c40f', '#9b59b6']
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                    }
+                }
+            }
+        });
+
+        // Initialize map with geographic data
+        const map = L.map('locationMap').setView([0, 0], 2);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Add markers for geographic data
+        const geoData = JSON.parse('<%- JSON.stringify(stats.geoData) %>');
+        geoData.forEach(location => {
+            if (location.lat && location.lon) {
+                L.marker([location.lat, location.lon])
+                    .bindPopup(`Records: ${location.count}`)
+                    .addTo(map);
+            }
+        });
+    });
+</script>
