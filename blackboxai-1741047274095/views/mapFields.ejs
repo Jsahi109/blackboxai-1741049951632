@@ -1,123 +1,139 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Map Fields - Data Management System</title>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-    <link rel="stylesheet" href="/css/main.css">
-</head>
-<body>
-    <div class="container">
-        <h1 class="mt-5 mb-4">Map CSV Fields to Database Fields</h1>
-        
-        <!-- Data Preview -->
-        <div class="card mb-4">
-            <div class="card-header">
-                <h5 class="mb-0">Data Preview (First 5 rows)</h5>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-sm">
-                        <thead>
-                            <tr>
-                                <% headers.forEach(header => { %>
-                                    <th><%= header %></th>
-                                <% }); %>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <% results.forEach(row => { %>
-                                <tr>
-                                    <% headers.forEach(header => { %>
-                                        <td><%= row[header] %></td>
-                                    <% }); %>
-                                </tr>
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <form action="/process" method="post">
+                <input type="hidden" name="filePath" value="<%= filePath %>">
+                <input type="hidden" name="vendorName" value="<%= vendorName %>">
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Map Fields</h5>
+                        <small class="text-muted">Match your CSV columns to our database fields</small>
+                    </div>
+                    <div class="card-body">
+                        <% if (typeof error !== 'undefined' && error) { %>
+                            <div class="alert alert-danger">
+                                <%= error %>
+                            </div>
+                        <% } %>
+
+                        <% if (typeof columnNames !== 'undefined' && columnNames.length > 0) { %>
+                            <% columnNames.forEach(dbField => { %>
+                                <div class="form-group row mb-3">
+                                    <label class="col-sm-3 col-form-label">
+                                        <%= dbField.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) %>:
+                                    </label>
+                                    <div class="col-sm-9">
+                                        <select name="<%= dbField %>" class="form-control">
+                                            <option value="">Select CSV field</option>
+                                            <% if (typeof headers !== 'undefined' && Array.isArray(headers)) { %>
+                                                <% headers.forEach(header => { %>
+                                                    <option value="<%= header %>" <%= header.toLowerCase() === dbField.toLowerCase() ? 'selected' : '' %>>
+                                                        <%= header %>
+                                                    </option>
+                                                <% }); %>
+                                            <% } %>
+                                        </select>
+                                    </div>
+                                </div>
                             <% }); %>
-                        </tbody>
-                    </table>
+
+                            <div class="text-end mt-4">
+                                <a href="/" class="btn btn-secondary me-2">
+                                    <i class="bi bi-arrow-left"></i> Back
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-check2"></i> Process Data
+                                </button>
+                            </div>
+                        <% } else { %>
+                            <div class="alert alert-warning">
+                                No database fields available for mapping.
+                                <a href="/" class="btn btn-primary mt-3">
+                                    <i class="bi bi-arrow-left"></i> Return to Upload
+                                </a>
+                            </div>
+                        <% } %>
+                    </div>
+                </div>
+            </form>
+
+            <!-- Field Description Card -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Field Descriptions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Field</th>
+                                    <th>Description</th>
+                                    <th>Example</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>First Name</td>
+                                    <td>Contact's first name</td>
+                                    <td>John</td>
+                                </tr>
+                                <tr>
+                                    <td>Last Name</td>
+                                    <td>Contact's last name</td>
+                                    <td>Doe</td>
+                                </tr>
+                                <tr>
+                                    <td>Phone 1-4</td>
+                                    <td>Contact phone numbers</td>
+                                    <td>123-456-7890</td>
+                                </tr>
+                                <tr>
+                                    <td>Address 1</td>
+                                    <td>Primary street address</td>
+                                    <td>123 Main St</td>
+                                </tr>
+                                <tr>
+                                    <td>Address 2</td>
+                                    <td>Secondary address (apt, suite, etc.)</td>
+                                    <td>Suite 100</td>
+                                </tr>
+                                <tr>
+                                    <td>City</td>
+                                    <td>City name</td>
+                                    <td>San Francisco</td>
+                                </tr>
+                                <tr>
+                                    <td>State</td>
+                                    <td>State abbreviation</td>
+                                    <td>CA</td>
+                                </tr>
+                                <tr>
+                                    <td>Region</td>
+                                    <td>Geographic region or area</td>
+                                    <td>Bay Area</td>
+                                </tr>
+                                <tr>
+                                    <td>Zipcode</td>
+                                    <td>Postal code</td>
+                                    <td>94105</td>
+                                </tr>
+                                <tr>
+                                    <td>Latitude</td>
+                                    <td>Geographic latitude</td>
+                                    <td>37.7749</td>
+                                </tr>
+                                <tr>
+                                    <td>Longitude</td>
+                                    <td>Geographic longitude</td>
+                                    <td>-122.4194</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
-
-        <!-- Field Mapping Form -->
-        <form id="mappingForm" class="mb-5">
-            <input type="hidden" id="vendorName" value="<%= vendorName %>">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">Map Fields</h5>
-                </div>
-                <div class="card-body">
-                    <% columnNames.forEach(dbField => { %>
-                        <div class="form-group row">
-                            <label class="col-sm-3 col-form-label">
-                                <%= dbField %>:
-                            </label>
-                            <div class="col-sm-9">
-                                <select name="<%= dbField %>" class="form-control" required>
-                                    <option value="">Select CSV field</option>
-                                    <% headers.forEach(header => { %>
-                                        <option value="<%= header %>"><%= header %></option>
-                                    <% }); %>
-                                </select>
-                            </div>
-                        </div>
-                    <% }); %>
-                </div>
-                <div class="card-footer">
-                    <button type="submit" class="btn btn-primary">Process Data</button>
-                    <a href="/" class="btn btn-secondary ml-2">Cancel</a>
-                </div>
-            </div>
-        </form>
     </div>
-
-    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
-    <script>
-        $(document).ready(function() {
-            $('#mappingForm').on('submit', function(e) {
-                e.preventDefault();
-                
-                const mapping = {};
-                $(this).find('select').each(function() {
-                    const dbField = $(this).attr('name');
-                    const csvField = $(this).val();
-                    if (csvField) {
-                        mapping[dbField] = csvField;
-                    }
-                });
-
-                const data = {
-                    mapping: mapping,
-                    vendorName: $('#vendorName').val(),
-                    filePath: '<%= filePath %>'
-                };
-
-                // Disable form while processing
-                const submitBtn = $(this).find('button[type="submit"]');
-                const originalText = submitBtn.text();
-                submitBtn.prop('disabled', true).text('Processing...');
-
-                $.ajax({
-                    url: '/process-mapping',
-                    method: 'POST',
-                    contentType: 'application/json',
-                    data: JSON.stringify(data),
-                    success: function(response) {
-                        alert(response.message);
-                        if (response.success) {
-                            window.location.href = '/';
-                        } else {
-                            submitBtn.prop('disabled', false).text(originalText);
-                        }
-                    },
-                    error: function(xhr) {
-                        alert('Error processing data: ' + xhr.responseText);
-                        submitBtn.prop('disabled', false).text(originalText);
-                    }
-                });
-            });
-        });
-    </script>
-</body>
-</html>
+</div>
