@@ -1,0 +1,26 @@
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        Error
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <h5 class="card-title"><%= message %></h5>
+                    <% if (error) { %>
+                        <pre class="bg-light p-3 mt-3"><%= error %></pre>
+                    <% } %>
+                    <div class="mt-4">
+                        <a href="/" class="btn btn-primary">
+                            <i class="bi bi-house-fill me-2"></i>
+                            Return to Home
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
