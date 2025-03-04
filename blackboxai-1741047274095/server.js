@@ -4,7 +4,7 @@ const expressLayouts = require('express-ejs-layouts');
 const uploadRouter = require('./routes/upload');
 const dashboardRouter = require('./routes/dashboard');
 const downloadRouter = require('./routes/download');
-const dispositionsRouter = require('./routes/dispositions'); // Add dispositions router
+const dispositionsRouter = require('./routes/dispositions');
 const db = require('./config/db');
 
 const app = express();
@@ -45,7 +45,22 @@ app.get('/', (req, res) => {
 app.use('/', uploadRouter);
 app.use('/', dashboardRouter);
 app.use('/', downloadRouter);
-app.use('/', dispositionsRouter); // Mount dispositions routes
+app.use('/', dispositionsRouter);
+
+// Execute schema.sql on startup
+const schemaPath = path.join(__dirname, 'config', 'schema.sql');
+fs.readFile(schemaPath, 'utf8', async (err, schema) => {
+    if (err) {
+        console.error('Error reading schema.sql:', err);
+        return;
+    }
+    try {
+        await db.execute(schema);
+        console.log('Successfully executed schema.sql');
+    } catch (error) {
+        console.error('Error executing schema.sql:', error);
+    }
+});
 
 // Error handling middleware
 app.use((err, req, res, next) => {
