@@ -1,22 +1,20 @@
--- Drop tables in reverse order of dependencies
 DROP TABLE IF EXISTS dispositions;
 DROP TABLE IF EXISTS disposition_types;
 DROP TABLE IF EXISTS downloads_history;
 DROP TABLE IF EXISTS uploaded_files;
 DROP TABLE IF EXISTS master;
 
--- Create master table
 CREATE TABLE master (
     id INT AUTO_INCREMENT PRIMARY KEY,
     first_name VARCHAR(100),
     last_name VARCHAR(100),
+    email VARCHAR(255),
     phone1 VARCHAR(20),
     phone2 VARCHAR(20),
     phone3 VARCHAR(20),
     phone4 VARCHAR(20),
     address1 VARCHAR(255),
     address2 VARCHAR(255),
-    email VARCHAR(255),
     city VARCHAR(100),
     state VARCHAR(50),
     county VARCHAR(100),
@@ -27,6 +25,7 @@ CREATE TABLE master (
     vendor_name VARCHAR(100),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_email (email),
     INDEX idx_phone1 (phone1),
     INDEX idx_phone2 (phone2),
     INDEX idx_phone3 (phone3),
@@ -38,7 +37,6 @@ CREATE TABLE master (
     INDEX idx_vendor (vendor_name)
 );
 
--- Create disposition types table
 CREATE TABLE disposition_types (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(50) UNIQUE NOT NULL,
@@ -48,7 +46,6 @@ CREATE TABLE disposition_types (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
--- Create dispositions table
 CREATE TABLE dispositions (
     id INT AUTO_INCREMENT PRIMARY KEY,
     phone_number VARCHAR(20) NOT NULL,
@@ -61,7 +58,6 @@ CREATE TABLE dispositions (
     UNIQUE KEY unique_phone_disposition (phone_number)
 );
 
--- Create downloads history table
 CREATE TABLE downloads_history (
     id INT AUTO_INCREMENT PRIMARY KEY,
     file_name VARCHAR(255) NOT NULL,
@@ -71,7 +67,6 @@ CREATE TABLE downloads_history (
     download_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Create uploaded files table
 CREATE TABLE uploaded_files (
     id INT AUTO_INCREMENT PRIMARY KEY,
     filename VARCHAR(255) NOT NULL,
@@ -94,7 +89,6 @@ CREATE TABLE uploaded_files (
     INDEX idx_upload_date (upload_date)
 );
 
--- Insert default disposition types
 INSERT IGNORE INTO disposition_types (name, description) VALUES
 ('DNC', 'Do Not Call'),
 ('Callback', 'Contact requested callback'),
