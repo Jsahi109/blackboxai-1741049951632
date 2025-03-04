@@ -1,102 +1,123 @@
-const csv = require('csv-parser');
-const fs = require('fs');
-const vendorModel = require('../models/vendorModel');
+const fs = require('fs').promises;
+const { parse } = require('csv-parse/sync'); // Using sync version for simpler code
 const masterModel = require('../models/masterModel');
-const db = require('../config/db');
 
-exports.handleUpload = async (req, res) => {
-  const vendorName = req.body.vendorName;
-  const results = [];
-  const headers = [];
-
-  // Check if the file exists
-  if (!req.file) {
-    res.status(400).send('No file uploaded.');
-    return;
-  }
-
-  fs.createReadStream(req.file.path)
-    .pipe(csv())
-    .on('data', (data) => {
-      // Capture headers
-      if (headers.length === 0) {
-        headers.push(...Object.keys(data));
-      }
-      results.push(data);
-    })
-    .on('end', async () => {
-      try {
-        // Retrieve database schema
-        const [columns] = await db.execute('SHOW COLUMNS FROM master');
-        const columnNames = columns
-          .map(col => col.Field)
-          .filter(field => field !== 'id'); // Exclude id field from mapping
-
-        // Render mapping interface with headers and column names
-        res.render('mapFields', { 
-          headers, 
-          columnNames, 
-          vendorName, 
-          results: results.slice(0, 5), // Send first 5 rows as preview
-          filePath: req.file.path // Pass the file path to the template
-        });
-      } catch (error) {
-        console.error('Database error:', error);
-        res.status(500).send('Error retrieving database structure.');
-      }
-    })
-    .on('error', (error) => {
-      console.error('File processing error:', error);
-      res.status(500).send('Error processing the file.');
+exports.getUploadForm = (req, res) => {
+    res.render('index', { 
+        layout: 'layouts/main',
+        error: null
     });
 };
 
-exports.processMapping = async (req, res) => {
-  try {
-    const { mapping, vendorName, filePath } = req.body;
-    const results = [];
+exports.uploadFile = async (req, res) => {
+    try {
+        if (!req.file) {
+            throw new Error('No file uploaded');
+        }
 
-    // Create vendor if not exists
-    await vendorModel.createVendor(vendorName).catch(() => {
-      // Ignore error if vendor already exists
-    });
+        const vendorName = req.body.vendorName;
+        if (!vendorName) {
+            throw new Error('Vendor name is required');
+        }
 
-    // Process CSV with mappings
-    await new Promise((resolve, reject) => {
-      fs.createReadStream(filePath)
-        .pipe(csv())
-        .on('data', (data) => {
-          const mappedRecord = {};
-          // Apply field mapping
-          Object.entries(mapping).forEach(([dbField, csvField]) => {
-            mappedRecord[dbField] = data[csvField] || null;
-          });
-          mappedRecord.vendor_name = vendorName;
-          results.push(mappedRecord);
-        })
-        .on('end', resolve)
-        .on('error', reject);
-    });
+        // Read file content
+        const fileContent = await fs.readFile(req.file.path, 'utf-8');
 
-    // Insert records into master table
-    for (const record of results) {
-      await masterModel.insertMasterRecord(record, vendorName);
+        // Parse CSV content
+        const records = parse(fileContent, {
+            columns: true,
+            skip_empty_lines: true,
+            trim: true
+        });
+
+        if (records.length === 0) {
+            throw new Error('CSV file is empty');
+        }
+
+        // Get headers from the first record
+        const headers = Object.keys(records[0]);
+        console.log('CSV Headers:', headers); // Debug log
+
+        // Get available column names from the model
+        const columnNames = await masterModel.getColumnNames();
+        console.log('Column Names:', columnNames); // Debug log
+
+        res.render('mapFields', {
+            layout: 'layouts/main',
+            headers: headers,
+            columnNames: columnNames,
+            filePath: req.file.path,
+            vendorName,
+            error: null
+        });
+    } catch (error) {
+        console.error('Upload Error:', error);
+        // Clean up uploaded file if it exists
+        if (req.file && req.file.path) {
+            try {
+                await fs.unlink(req.file.path);
+            } catch (unlinkError) {
+                console.error('Error deleting file:', unlinkError);
+            }
+        }
+        res.status(400).render('index', {
+            layout: 'layouts/main',
+            error: error.message
+        });
     }
+};
 
-    // Clean up uploaded file
-    fs.unlink(filePath, (err) => {
-      if (err) console.error('Error deleting file:', err);
-    });
+exports.processFile = async (req, res) => {
+    const { filePath, vendorName, ...fieldMapping } = req.body;
 
-    res.json({ 
-      success: true, 
-      message: `Successfully processed ${results.length} records` 
-    });
-  } catch (error) {
-    console.error('Processing error:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Error processing the mapping' 
-    });
-  }
+    try {
+        // Validate inputs
+        if (!filePath || !vendorName) {
+            throw new Error('Missing required fields');
+        }
+
+        // Read and parse CSV file
+        const fileContent = await fs.readFile(filePath, 'utf-8');
+        const records = parse(fileContent, {
+            columns: true,
+            skip_empty_lines: true,
+            trim: true
+        });
+
+        console.log('Field Mapping:', fieldMapping); // Debug log
+        console.log('First Record:', records[0]); // Debug log
+
+        // Process each record
+        for (const record of records) {
+            const mappedRecord = {};
+            
+            // Map fields according to user's selection
+            Object.entries(fieldMapping).forEach(([dbField, csvField]) => {
+                if (csvField && csvField !== '') {
+                    mappedRecord[dbField] = record[csvField];
+                }
+            });
+
+            if (Object.keys(mappedRecord).length === 0) {
+                throw new Error('No fields were mapped');
+            }
+
+            console.log('Mapped Record:', mappedRecord); // Debug log
+
+            // Insert record into database
+            await masterModel.insertMasterRecord(mappedRecord, vendorName);
+        }
+
+        // Clean up uploaded file
+        await fs.unlink(filePath);
+
+        res.redirect('/dashboard');
+    } catch (error) {
+        console.error('Processing Error:', error);
+        res.status(500).render('error', {
+            layout: 'layouts/main',
+            message: 'Error processing file',
+            error: error.message
+        });
+    }
 };
