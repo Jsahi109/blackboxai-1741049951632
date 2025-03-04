@@ -129,6 +129,32 @@ class MasterModel {
         }
     }
 
+    static async getUploadById(id) {
+        try {
+            const [records] = await db.execute(
+                'SELECT * FROM uploaded_files WHERE id = ?',
+                [id]
+            );
+            
+            if (records.length === 0) {
+                return null;
+            }
+
+            const record = records[0];
+            if (record.headers) {
+                record.headers = JSON.parse(record.headers);
+            }
+            if (record.mapping) {
+                record.mapping = JSON.parse(record.mapping);
+            }
+            
+            return record;
+        } catch (error) {
+            console.error('Error getting upload by id:', error);
+            throw error;
+        }
+    }
+
     static async getRecentUploads(limit = 10) {
         try {
             const [uploads] = await db.execute(
