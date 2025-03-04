@@ -7,10 +7,16 @@
     "start": "node server.js"
   },
   "dependencies": {
-    "express": "^4.17.1",
-    "mysql2": "^2.2.5",
-    "multer": "^1.4.2",
+    "bootstrap-icons": "^1.11.3",
+    "chart.js": "^4.4.8",
+    "csv-parse": "^5.6.0",
     "csv-parser": "^3.0.0",
-    "ejs": "^3.1.6"
+    "datatables.net-bs4": "^2.2.2",
+    "ejs": "^3.1.6",
+    "express": "^4.17.1",
+    "express-ejs-layouts": "^2.5.1",
+    "leaflet": "^1.9.4",
+    "multer": "^1.4.4",
+    "mysql2": "^2.3.3"
   }
 }
