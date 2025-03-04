@@ -11,8 +11,32 @@ main {
 }
 
 /* Navigation */
+.navbar {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 1rem;
+}
+
 .navbar-brand {
     font-weight: bold;
+    font-size: 1.5rem;
+}
+
+.nav-link {
+    font-size: 1rem;
+    padding: 0.5rem 1rem !important;
+}
+
+.nav-link i {
+    margin-right: 0.5rem;
+}
+
+.nav-item {
+    margin: 0 0.25rem;
+}
+
+.nav-item:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 0.25rem;
 }
 
 /* Cards */
@@ -72,26 +96,12 @@ main {
     margin-bottom: 1rem;
 }
 
-/* Field Mapping */
-.field-mapping {
-    border-bottom: 1px solid #dee2e6;
-    padding: 1rem 0;
-}
-
-.field-mapping:last-child {
-    border-bottom: none;
-}
-
-/* Sample Format */
-.sample-format {
-    font-size: 0.9rem;
-}
-
 /* Footer */
 .footer {
     background-color: #f8f9fa;
     padding: 1rem 0;
     margin-top: auto;
+    border-top: 1px solid #dee2e6;
 }
 
 /* Responsive */
@@ -99,5 +109,13 @@ main {
     .container {
         padding-left: 1rem;
         padding-right: 1rem;
+    }
+    
+    .navbar-nav {
+        padding: 0.5rem 0;
+    }
+    
+    .nav-item {
+        margin: 0.25rem 0;
     }
 }
