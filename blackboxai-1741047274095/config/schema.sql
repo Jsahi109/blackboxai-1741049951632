@@ -1,9 +1,8 @@
--- Master table (existing)
+-- Create master table
 CREATE TABLE IF NOT EXISTS master (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    vendor_name VARCHAR(255) NOT NULL,
-    first_name VARCHAR(255),
-    last_name VARCHAR(255),
+    first_name VARCHAR(100),
+    last_name VARCHAR(100),
     phone1 VARCHAR(20),
     phone2 VARCHAR(20),
     phone3 VARCHAR(20),
@@ -12,64 +11,123 @@ CREATE TABLE IF NOT EXISTS master (
     address2 VARCHAR(255),
     city VARCHAR(100),
     state VARCHAR(50),
+    county VARCHAR(100),
     region VARCHAR(100),
     zipcode VARCHAR(20),
     lat DECIMAL(10, 8),
     lon DECIMAL(11, 8),
+    vendor_name VARCHAR(100),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX idx_vendor (vendor_name),
-    INDEX idx_location (city, state, region),
-    INDEX idx_name (first_name, last_name),
-    INDEX idx_phone (phone1, phone2, phone3, phone4)
+    INDEX idx_phone1 (phone1),
+    INDEX idx_phone2 (phone2),
+    INDEX idx_phone3 (phone3),
+    INDEX idx_phone4 (phone4),
+    INDEX idx_zipcode (zipcode),
+    INDEX idx_city (city),
+    INDEX idx_county (county),
+    INDEX idx_region (region),
+    INDEX idx_vendor (vendor_name)
 );
 
--- Dispositions table
+-- Create disposition types table
+CREATE TABLE IF NOT EXISTS disposition_types (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(50) UNIQUE NOT NULL,
+    description TEXT,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- Create dispositions table
 CREATE TABLE IF NOT EXISTS dispositions (
     id INT AUTO_INCREMENT PRIMARY KEY,
     phone_number VARCHAR(20) NOT NULL,
     disposition_type VARCHAR(50) NOT NULL,
     notes TEXT,
+    created_by VARCHAR(100),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    created_by VARCHAR(100),
-    UNIQUE INDEX idx_phone_disposition (phone_number, disposition_type),
-    INDEX idx_disposition_type (disposition_type),
-    INDEX idx_created_at (created_at)
+    FOREIGN KEY (disposition_type) REFERENCES disposition_types(name),
+    UNIQUE KEY unique_phone_disposition (phone_number)
 );
 
--- Downloads history table
+-- Create downloads history table
 CREATE TABLE IF NOT EXISTS downloads_history (
     id INT AUTO_INCREMENT PRIMARY KEY,
     file_name VARCHAR(255) NOT NULL,
-    download_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     record_count INT NOT NULL,
     filters JSON,
     created_by VARCHAR(100),
-    INDEX idx_download_date (download_date),
-    INDEX idx_created_by (created_by)
+    download_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Disposition types lookup table
-CREATE TABLE IF NOT EXISTS disposition_types (
+-- Create uploaded files table
+CREATE TABLE IF NOT EXISTS uploaded_files (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(50) NOT NULL UNIQUE,
-    description TEXT,
-    is_active BOOLEAN DEFAULT TRUE,
+    filename VARCHAR(255) NOT NULL,
+    vendor_name VARCHAR(100) NOT NULL,
+    total_records INT NOT NULL DEFAULT 0,
+    duplicates_count INT NOT NULL DEFAULT 0,
+    successful_records INT NOT NULL DEFAULT 0,
+    failed_records INT NOT NULL DEFAULT 0,
+    upload_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    status ENUM('processing', 'completed', 'failed') DEFAULT 'processing',
+    error_message TEXT,
+    uploaded_by VARCHAR(100),
+    file_path VARCHAR(255),
+    original_filename VARCHAR(255),
+    file_size BIGINT,
+    headers JSON,
+    mapping JSON,
+    INDEX idx_vendor (vendor_name),
+    INDEX idx_status (status),
+    INDEX idx_upload_date (upload_date)
+);
+
+-- Drop and recreate master table to update schema
+DROP TABLE IF EXISTS master;
+CREATE TABLE master (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    first_name VARCHAR(100),
+    last_name VARCHAR(100),
+    phone1 VARCHAR(20),
+    phone2 VARCHAR(20),
+    phone3 VARCHAR(20),
+    phone4 VARCHAR(20),
+    address1 VARCHAR(255),
+    address2 VARCHAR(255),
+    city VARCHAR(100),
+    state VARCHAR(50),
+    county VARCHAR(100),
+    region VARCHAR(100),
+    zipcode VARCHAR(20),
+    lat DECIMAL(10, 8),
+    lon DECIMAL(11, 8),
+    vendor_name VARCHAR(100),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX idx_active_name (is_active, name)
+    INDEX idx_phone1 (phone1),
+    INDEX idx_phone2 (phone2),
+    INDEX idx_phone3 (phone3),
+    INDEX idx_phone4 (phone4),
+    INDEX idx_zipcode (zipcode),
+    INDEX idx_city (city),
+    INDEX idx_county (county),
+    INDEX idx_region (region),
+    INDEX idx_vendor (vendor_name)
 );
 
--- Insert default disposition types
+-- Insert default disposition types if they don't exist
 INSERT IGNORE INTO disposition_types (name, description) VALUES
 ('DNC', 'Do Not Call'),
-('Not Interested', 'Contact expressed no interest'),
 ('Callback', 'Contact requested callback'),
-('Wrong Number', 'Incorrect phone number'),
-('No Answer', 'No response received'),
-('Busy', 'Line was busy'),
-('Voicemail', 'Left voicemail message'),
 ('Completed', 'Call completed successfully'),
-('Language Barrier', 'Communication issues due to language'),
-('Disconnected', 'Phone number is disconnected');
+('Disconnected', 'Phone number disconnected'),
+('Language Barrier', 'Unable to communicate due to language'),
+('No Answer', 'No answer after multiple attempts'),
+('Not Interested', 'Contact not interested'),
+('Voicemail', 'Left voicemail message'),
+('Wrong Number', 'Incorrect phone number'),
+('Busy', 'Line busy');
