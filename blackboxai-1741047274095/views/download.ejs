@@ -12,7 +12,7 @@
                             <%= error %>
                         </div>
                     <% } %>
-                    <form action="/download" method="post">
+                    <form action="/download" method="post" id="downloadForm">
                         <!-- File Name -->
                         <div class="mb-3">
                             <label for="fileName" class="form-label">File Name <span class="text-danger">*</span></label>
@@ -20,23 +20,55 @@
                             <small class="text-muted">Enter a name for your downloaded file (without .csv extension)</small>
                         </div>
 
-                        <!-- Zip Codes -->
+                        <!-- Vendor Selection -->
                         <div class="mb-3">
-                            <label for="zipCodes" class="form-label">Zip Codes</label>
-                            <input type="text" class="form-control" id="zipCodes" name="zipCodes">
-                            <small class="text-muted">Enter zip codes separated by commas (e.g., 12345, 67890)</small>
+                            <label for="vendorName" class="form-label">Vendor</label>
+                            <select class="form-select" id="vendorName" name="vendorName">
+                                <option value="">All Vendors</option>
+                                <% if (vendors && vendors.length > 0) { %>
+                                    <% vendors.forEach(vendor => { %>
+                                        <option value="<%= vendor %>"><%= vendor %></option>
+                                    <% }); %>
+                                <% } %>
+                            </select>
+                            <small class="text-muted">Select a vendor to filter data (optional)</small>
                         </div>
 
-                        <!-- Date Range -->
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label for="startDate" class="form-label">Start Date</label>
-                                <input type="date" class="form-control" id="startDate" name="startDate">
-                            </div>
-                            <div class="col-md-6">
-                                <label for="endDate" class="form-label">End Date</label>
-                                <input type="date" class="form-control" id="endDate" name="endDate">
-                            </div>
+                        <!-- Geographic Filter Type -->
+                        <div class="mb-3">
+                            <label class="form-label">Geographic Filter Type</label>
+                            <select class="form-select" id="geoFilterType">
+                                <option value="">No Geographic Filter</option>
+                                <option value="zipCodes">Filter by Zip Codes</option>
+                                <option value="cities">Filter by Cities</option>
+                                <option value="counties">Filter by Counties</option>
+                                <option value="regions">Filter by Regions</option>
+                            </select>
+                        </div>
+
+                        <!-- Geographic Filter Values -->
+                        <div class="mb-3 geo-filter" id="zipCodesFilter" style="display: none;">
+                            <label for="zipCodes" class="form-label">Zip Codes</label>
+                            <input type="text" class="form-control" id="zipCodes" name="zipCodes" placeholder="e.g., 12345, 67890">
+                            <small class="text-muted">Enter zip codes separated by commas</small>
+                        </div>
+
+                        <div class="mb-3 geo-filter" id="citiesFilter" style="display: none;">
+                            <label for="cities" class="form-label">Cities</label>
+                            <input type="text" class="form-control" id="cities" name="cities" placeholder="e.g., New York, Los Angeles">
+                            <small class="text-muted">Enter cities separated by commas</small>
+                        </div>
+
+                        <div class="mb-3 geo-filter" id="countiesFilter" style="display: none;">
+                            <label for="counties" class="form-label">Counties</label>
+                            <input type="text" class="form-control" id="counties" name="counties" placeholder="e.g., Orange County, King County">
+                            <small class="text-muted">Enter counties separated by commas</small>
+                        </div>
+
+                        <div class="mb-3 geo-filter" id="regionsFilter" style="display: none;">
+                            <label for="regions" class="form-label">Regions</label>
+                            <input type="text" class="form-control" id="regions" name="regions" placeholder="e.g., Northeast, Southwest">
+                            <small class="text-muted">Enter regions separated by commas</small>
                         </div>
 
                         <!-- Disposition Filtering -->
@@ -162,9 +194,29 @@
     </div>
 </div>
 
-<!-- Download Page Scripts -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Handle geographic filter type selection
+    const geoFilterType = document.getElementById('geoFilterType');
+    const geoFilters = document.querySelectorAll('.geo-filter');
+    const geoInputs = document.querySelectorAll('.geo-filter input');
+
+    geoFilterType.addEventListener('change', function() {
+        // Hide all filters and clear their values
+        geoFilters.forEach(filter => {
+            filter.style.display = 'none';
+        });
+        geoInputs.forEach(input => {
+            input.value = '';
+        });
+
+        // Show selected filter
+        const selectedFilter = document.getElementById(this.value + 'Filter');
+        if (selectedFilter) {
+            selectedFilter.style.display = 'block';
+        }
+    });
+
     // Initialize delete functionality
     const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
     let deleteId = null;
