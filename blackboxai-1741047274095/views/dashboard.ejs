@@ -1,146 +1,192 @@
-<div class="container-fluid py-4">
-    <!-- Statistics Cards -->
+<div class="container-fluid mt-4">
+    <!-- Statistics Overview -->
     <div class="row mb-4">
-        <div class="col-xl-3 col-sm-6 mb-xl-0 mb-4">
-            <div class="card">
-                <div class="card-body stat-card">
-                    <i class="bi bi-file-earmark-text"></i>
-                    <div class="stat-value"><%= stats.totalRecords %></div>
-                    <div class="stat-label">Total Records</div>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-3 col-sm-6 mb-xl-0 mb-4">
-            <div class="card">
-                <div class="card-body stat-card">
-                    <i class="bi bi-building"></i>
-                    <div class="stat-value"><%= stats.vendorStats.length %></div>
-                    <div class="stat-label">Active Vendors</div>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-3 col-sm-6 mb-xl-0 mb-4">
-            <div class="card">
-                <div class="card-body stat-card">
-                    <i class="bi bi-check-circle"></i>
-                    <div class="stat-value"><%= stats.qualityMetrics.phoneCompleteness %>%</div>
-                    <div class="stat-label">Phone Completeness</div>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-3 col-sm-6">
-            <div class="card">
-                <div class="card-body stat-card">
-                    <i class="bi bi-geo-alt"></i>
-                    <div class="stat-value"><%= stats.qualityMetrics.addressCompleteness %>%</div>
-                    <div class="stat-label">Address Completeness</div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Charts Row -->
-    <div class="row mb-4">
-        <div class="col-lg-8">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">Upload Trends</h5>
-                </div>
+        <div class="col-md-3">
+            <div class="card h-100 border-primary">
                 <div class="card-body">
-                    <div class="chart-container">
-                        <canvas id="uploadChart"></canvas>
+                    <h6 class="card-subtitle mb-2 text-muted">Total Records</h6>
+                    <h2 class="card-title mb-0"><%= stats.totalRecords %></h2>
+                    <div class="small text-success mt-2">
+                        <i class="bi bi-arrow-up"></i>
+                        <%= stats.recordsGrowth %>% from last month
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-lg-4">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">Records by Vendor</h5>
-                </div>
+        <div class="col-md-3">
+            <div class="card h-100 border-success">
                 <div class="card-body">
-                    <div class="chart-container">
-                        <canvas id="vendorChart"></canvas>
+                    <h6 class="card-subtitle mb-2 text-muted">Active Vendors</h6>
+                    <h2 class="card-title mb-0"><%= stats.activeVendors %></h2>
+                    <div class="small text-muted mt-2">
+                        <%= stats.totalVendors %> total vendors
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card h-100 border-info">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">Dispositions Today</h6>
+                    <h2 class="card-title mb-0"><%= stats.todayDispositions %></h2>
+                    <div class="small text-success mt-2">
+                        <i class="bi bi-arrow-up"></i>
+                        <%= stats.dispositionsGrowth %>% from yesterday
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card h-100 border-warning">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">Duplicate Rate</h6>
+                    <h2 class="card-title mb-0"><%= stats.duplicateRate %>%</h2>
+                    <div class="small text-danger mt-2">
+                        <%= stats.totalDuplicates %> total duplicates
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Recent Activity and Map -->
     <div class="row">
-        <div class="col-lg-8">
-            <div class="card">
-                <div class="card-header">
+        <!-- Recent Activity -->
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Recent Activity</h5>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-sm btn-outline-secondary">Today</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary active">Week</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary">Month</button>
+                    </div>
                 </div>
-                <div class="card-body">
+                <div class="card-body p-0">
                     <div class="table-responsive">
-                        <table class="table table-hover">
+                        <table class="table table-hover mb-0">
                             <thead>
                                 <tr>
-                                    <th>Vendor</th>
-                                    <th>Records</th>
-                                    <th>Upload Date</th>
-                                    <th>Status</th>
+                                    <th>Activity</th>
+                                    <th>Details</th>
+                                    <th>Time</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <% stats.recentUploads.forEach(upload => { %>
-                                <tr>
-                                    <td><%= upload.vendor_name %></td>
-                                    <td><%= upload.count %></td>
-                                    <td><%= new Date(upload.upload_date).toLocaleDateString() %></td>
-                                    <td><span class="badge badge-success">Completed</span></td>
-                                </tr>
+                                <% recentActivity.forEach(activity => { %>
+                                    <tr>
+                                        <td>
+                                            <% if (activity.type === 'upload') { %>
+                                                <span class="badge bg-primary">
+                                                    <i class="bi bi-upload"></i> Upload
+                                                </span>
+                                            <% } else if (activity.type === 'download') { %>
+                                                <span class="badge bg-success">
+                                                    <i class="bi bi-download"></i> Download
+                                                </span>
+                                            <% } else if (activity.type === 'disposition') { %>
+                                                <span class="badge bg-info">
+                                                    <i class="bi bi-telephone"></i> Disposition
+                                                </span>
+                                            <% } %>
+                                        </td>
+                                        <td>
+                                            <%= activity.description %>
+                                            <% if (activity.metadata) { %>
+                                                <br>
+                                                <small class="text-muted"><%= activity.metadata %></small>
+                                            <% } %>
+                                        </td>
+                                        <td>
+                                            <div><%= activity.timeFormatted %></div>
+                                            <small class="text-muted"><%= activity.dateFormatted %></small>
+                                        </td>
+                                    </tr>
                                 <% }); %>
                             </tbody>
                         </table>
                     </div>
                 </div>
             </div>
-        </div>
-        <div class="col-lg-4">
+
+            <!-- Geographic Distribution -->
             <div class="card">
-                <div class="card-header">
+                <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Geographic Distribution</h5>
+                    <select class="form-select form-select-sm w-auto">
+                        <option>By Region</option>
+                        <option>By State</option>
+                        <option>By City</option>
+                    </select>
                 </div>
                 <div class="card-body">
-                    <div id="locationMap" style="height: 300px;"></div>
+                    <div class="chart-container" style="height: 300px;">
+                        <canvas id="geoDistributionChart"></canvas>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- Quick Actions -->
-    <div class="row mt-4">
-        <div class="col-12">
-            <div class="card">
+        <!-- Right Column -->
+        <div class="col-md-4">
+            <!-- Disposition Summary -->
+            <div class="card mb-4">
                 <div class="card-header">
-                    <h5 class="mb-0">Quick Actions</h5>
+                    <h5 class="mb-0">Disposition Summary</h5>
                 </div>
                 <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-3">
-                            <a href="/" class="btn btn-primary btn-block">
-                                <i class="bi bi-upload"></i> Upload New Data
-                            </a>
-                        </div>
-                        <div class="col-md-3">
-                            <button onclick="exportData('csv')" class="btn btn-success btn-block">
-                                <i class="bi bi-file-earmark-spreadsheet"></i> Export to CSV
-                            </button>
-                        </div>
-                        <div class="col-md-3">
-                            <a href="/analytics" class="btn btn-info btn-block">
-                                <i class="bi bi-graph-up"></i> View Analytics
-                            </a>
-                        </div>
-                        <div class="col-md-3">
-                            <a href="/records" class="btn btn-secondary btn-block">
-                                <i class="bi bi-table"></i> View All Records
-                            </a>
-                        </div>
+                    <div class="chart-container mb-3" style="height: 200px;">
+                        <canvas id="dispositionChart"></canvas>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <tbody>
+                                <% dispositionSummary.forEach(disp => { %>
+                                    <tr>
+                                        <td>
+                                            <span class="badge" style="background-color: <%= disp.color %>">
+                                                <%= disp.name %>
+                                            </span>
+                                        </td>
+                                        <td class="text-end"><%= disp.count %></td>
+                                        <td class="text-end"><%= disp.percentage %>%</td>
+                                    </tr>
+                                <% }); %>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vendor Performance -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Vendor Performance</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        <% vendorPerformance.forEach(vendor => { %>
+                            <div class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <strong><%= vendor.name %></strong>
+                                    <span class="badge bg-<%= vendor.trend === 'up' ? 'success' : 'danger' %>">
+                                        <i class="bi bi-arrow-<%= vendor.trend %>"></i>
+                                        <%= vendor.change %>%
+                                    </span>
+                                </div>
+                                <div class="progress" style="height: 5px;">
+                                    <div class="progress-bar bg-primary" 
+                                         role="progressbar" 
+                                         style="width: <%= vendor.successRate %>%"
+                                         aria-valuenow="<%= vendor.successRate %>" 
+                                         aria-valuemin="0" 
+                                         aria-valuemax="100">
+                                    </div>
+                                </div>
+                                <div class="small text-muted mt-1">
+                                    Success Rate: <%= vendor.successRate %>%
+                                </div>
+                            </div>
+                        <% }); %>
                     </div>
                 </div>
             </div>
@@ -149,74 +195,53 @@
 </div>
 
 <script>
-    // Initialize charts with the server-side data
-    document.addEventListener('DOMContentLoaded', function() {
-        // Upload Trends Chart
-        const uploadData = JSON.parse('<%- JSON.stringify(stats.chartData.uploads) %>');
-        const uploadDates = Object.keys(uploadData);
-        const uploadCounts = Object.values(uploadData);
-
-        new Chart(document.getElementById('uploadChart'), {
-            type: 'line',
-            data: {
-                labels: uploadDates,
-                datasets: [{
-                    label: 'Records Uploaded',
-                    data: uploadCounts,
-                    borderColor: '#3498db',
-                    tension: 0.4,
-                    fill: true
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: {
-                        position: 'top',
-                    },
-                    title: {
-                        display: true,
-                        text: 'Upload Trends'
-                    }
+document.addEventListener('DOMContentLoaded', function() {
+    // Disposition Chart
+    const dispositionCtx = document.getElementById('dispositionChart').getContext('2d');
+    new Chart(dispositionCtx, {
+        type: 'doughnut',
+        data: {
+            labels: <%- JSON.stringify(dispositionSummary.map(d => d.name)) %>,
+            datasets: [{
+                data: <%- JSON.stringify(dispositionSummary.map(d => d.count)) %>,
+                backgroundColor: <%- JSON.stringify(dispositionSummary.map(d => d.color)) %>
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
                 }
-            }
-        });
-
-        // Vendor Distribution Chart
-        const vendorData = JSON.parse('<%- JSON.stringify(stats.chartData.vendors) %>');
-        new Chart(document.getElementById('vendorChart'), {
-            type: 'doughnut',
-            data: {
-                labels: vendorData.map(v => v.name),
-                datasets: [{
-                    data: vendorData.map(v => v.count),
-                    backgroundColor: ['#3498db', '#2ecc71', '#e74c3c', '#f1c40f', '#9b59b6']
-                }]
             },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: {
-                        position: 'right',
-                    }
-                }
-            }
-        });
-
-        // Initialize map with geographic data
-        const map = L.map('locationMap').setView([0, 0], 2);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors'
-        }).addTo(map);
-
-        // Add markers for geographic data
-        const geoData = JSON.parse('<%- JSON.stringify(stats.geoData) %>');
-        geoData.forEach(location => {
-            if (location.lat && location.lon) {
-                L.marker([location.lat, location.lon])
-                    .bindPopup(`Records: ${location.count}`)
-                    .addTo(map);
-            }
-        });
+            cutout: '70%'
+        }
     });
+
+    // Geographic Distribution Chart
+    const geoCtx = document.getElementById('geoDistributionChart').getContext('2d');
+    new Chart(geoCtx, {
+        type: 'bar',
+        data: {
+            labels: <%- JSON.stringify(geoDistribution.labels) %>,
+            datasets: [{
+                label: 'Records',
+                data: <%- JSON.stringify(geoDistribution.data) %>,
+                backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+});
 </script>
