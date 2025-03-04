@@ -1,25 +1,49 @@
-const fs = require('fs').promises;
-const { parse } = require('csv-parse/sync');
+const multer = require('multer');
+const path = require('path');
+const csv = require('csv-parser');
+const fs = require('fs');
 const DispositionModel = require('../models/dispositionModel');
 
-exports.getDispositionForm = async (req, res) => {
+// Configure multer for file upload
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, 'uploads/');
+    },
+    filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, uniqueSuffix + path.extname(file.originalname));
+    }
+});
+
+const upload = multer({
+    storage: storage,
+    fileFilter: (req, file, cb) => {
+        if (file.mimetype === 'text/csv' || file.originalname.endsWith('.csv')) {
+            cb(null, true);
+        } else {
+            cb(new Error('Only CSV files are allowed'));
+        }
+    }
+}).single('file');
+
+exports.getDispositionsPage = async (req, res) => {
     try {
-        // Get disposition types and stats
-        const dispositionTypes = await DispositionModel.getDispositionTypes();
-        const stats = await DispositionModel.getDispositionStats();
+        const types = await DispositionModel.getDispositionTypes();
+        const summary = await DispositionModel.getDispositionSummary();
+        const recent = await DispositionModel.getRecentDispositions(10);
 
         res.render('dispositions', {
             layout: 'layouts/main',
-            dispositionTypes,
-            stats,
-            error: null,
-            success: null
+            types,
+            summary,
+            recent,
+            error: null
         });
     } catch (error) {
-        console.error('Error loading disposition form:', error);
-        res.status(500).render('error', {
+        console.error('Error loading dispositions page:', error);
+        res.render('error', {
             layout: 'layouts/main',
-            message: 'Error loading disposition form',
+            message: 'Error loading dispositions',
             error: error.message
         });
     }
@@ -27,123 +51,80 @@ exports.getDispositionForm = async (req, res) => {
 
 exports.uploadDispositions = async (req, res) => {
     try {
-        if (!req.file) {
-            throw new Error('No file uploaded');
-        }
-
-        // Read and parse CSV file
-        let fileContent = await fs.readFile(req.file.path, 'utf-8');
-        
-        // Remove BOM if present
-        if (fileContent.charCodeAt(0) === 0xFEFF) {
-            fileContent = fileContent.slice(1);
-        }
-
-        // Parse CSV content
-        const records = parse(fileContent, {
-            columns: true,
-            skip_empty_lines: true,
-            trim: true
-        });
-
-        if (records.length === 0) {
-            throw new Error('CSV file is empty');
-        }
-
-        // Validate required columns
-        const requiredColumns = ['phone_number', 'disposition_type'];
-        const headers = Object.keys(records[0]);
-        const missingColumns = requiredColumns.filter(col => !headers.includes(col));
-
-        if (missingColumns.length > 0) {
-            throw new Error(`Missing required columns: ${missingColumns.join(', ')}`);
-        }
-
-        // Get valid disposition types
-        const dispositionTypes = await DispositionModel.getDispositionTypes();
-        const validDispositionTypes = dispositionTypes.map(d => d.name);
-
-        // Validate and format dispositions
-        const dispositions = records.map(record => {
-            if (!validDispositionTypes.includes(record.disposition_type)) {
-                throw new Error(`Invalid disposition type: ${record.disposition_type}`);
+        upload(req, res, async (err) => {
+            if (err) {
+                return res.status(400).json({
+                    success: false,
+                    error: err.message
+                });
             }
 
-            return {
-                phone_number: record.phone_number.replace(/\D/g, ''), // Remove non-digits
-                disposition_type: record.disposition_type,
-                notes: record.notes || null
-            };
-        });
+            if (!req.file) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Please select a file to upload'
+                });
+            }
 
-        // Check for existing dispositions
-        const phoneNumbers = dispositions.map(d => d.phone_number);
-        const existingDispositions = await DispositionModel.validatePhoneNumbers(phoneNumbers);
+            const records = [];
+            const requiredColumns = ['phone_number', 'disposition_type'];
+            let headers = null;
 
-        // Add dispositions
-        await DispositionModel.addDispositions(
-            dispositions,
-            'system' // TODO: Replace with actual user ID when authentication is implemented
-        );
+            // Read CSV file
+            await new Promise((resolve, reject) => {
+                fs.createReadStream(req.file.path)
+                    .pipe(csv())
+                    .on('headers', (csvHeaders) => {
+                        headers = csvHeaders;
+                        // Check for required columns
+                        const missingColumns = requiredColumns.filter(col => !csvHeaders.includes(col));
+                        if (missingColumns.length > 0) {
+                            reject(new Error(`Missing required columns: ${missingColumns.join(', ')}`));
+                        }
+                    })
+                    .on('data', (row) => {
+                        records.push({
+                            phone_number: row.phone_number,
+                            disposition_type: row.disposition_type,
+                            notes: row.notes || null
+                        });
+                    })
+                    .on('end', resolve)
+                    .on('error', reject);
+            });
 
-        // Clean up uploaded file
-        await fs.unlink(req.file.path);
+            // Validate phone numbers
+            const phoneNumbers = records.map(r => r.phone_number);
+            const validPhoneNumbers = await DispositionModel.validatePhoneNumbers(phoneNumbers);
+            
+            // Filter out records with invalid phone numbers
+            const validRecords = records.filter(r => validPhoneNumbers.includes(r.phone_number));
 
-        // Get updated stats
-        const stats = await DispositionModel.getDispositionStats();
+            if (validRecords.length === 0) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'No valid records found in the CSV file'
+                });
+            }
 
-        // Render with success message
-        const message = existingDispositions.length > 0
-            ? `Dispositions updated successfully. ${existingDispositions.length} numbers were already dispositioned.`
-            : 'Dispositions added successfully.';
+            // Add dispositions
+            await DispositionModel.addDispositions(validRecords, req.body.created_by || 'system');
 
-        res.render('dispositions', {
-            layout: 'layouts/main',
-            dispositionTypes,
-            stats,
-            error: null,
-            success: message
+            // Clean up uploaded file
+            fs.unlink(req.file.path, (err) => {
+                if (err) console.error('Error deleting uploaded file:', err);
+            });
+
+            res.json({
+                success: true,
+                message: `Successfully processed ${validRecords.length} dispositions`,
+                totalRecords: records.length,
+                validRecords: validRecords.length,
+                invalidRecords: records.length - validRecords.length
+            });
         });
     } catch (error) {
         console.error('Error uploading dispositions:', error);
-        
-        // Clean up uploaded file if it exists
-        if (req.file && req.file.path) {
-            try {
-                await fs.unlink(req.file.path);
-            } catch (unlinkError) {
-                console.error('Error deleting file:', unlinkError);
-            }
-        }
-
-        // Get disposition types and stats for re-rendering the form
-        const dispositionTypes = await DispositionModel.getDispositionTypes();
-        const stats = await DispositionModel.getDispositionStats();
-
-        res.status(400).render('dispositions', {
-            layout: 'layouts/main',
-            error: error.message,
-            success: null,
-            dispositionTypes,
-            stats
-        });
-    }
-};
-
-exports.deleteDispositions = async (req, res) => {
-    try {
-        const { phoneNumbers } = req.body;
-        if (!Array.isArray(phoneNumbers) || phoneNumbers.length === 0) {
-            throw new Error('No phone numbers provided');
-        }
-
-        const deletedCount = await DispositionModel.deleteDispositions(phoneNumbers);
-        res.json({
-            success: true,
-            message: `Successfully deleted ${deletedCount} disposition(s)`
-        });
-    } catch (error) {
-        console.error('Error deleting dispositions:', error);
         res.status(500).json({
             success: false,
             error: error.message
@@ -151,12 +132,89 @@ exports.deleteDispositions = async (req, res) => {
     }
 };
 
-exports.getDispositionStats = async (req, res) => {
+exports.addDisposition = async (req, res) => {
     try {
-        const stats = await DispositionModel.getDispositionStats();
-        res.json(stats);
+        const { phone_number, disposition_type, notes } = req.body;
+
+        if (!phone_number || !disposition_type) {
+            return res.status(400).json({
+                success: false,
+                error: 'Phone number and disposition type are required'
+            });
+        }
+
+        // Validate phone number
+        const validPhoneNumbers = await DispositionModel.validatePhoneNumbers([phone_number]);
+        if (validPhoneNumbers.length === 0) {
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid phone number or phone number not found in records'
+            });
+        }
+
+        await DispositionModel.addDisposition(
+            phone_number,
+            disposition_type,
+            notes,
+            req.body.created_by || 'system'
+        );
+
+        res.json({
+            success: true,
+            message: 'Disposition added successfully'
+        });
     } catch (error) {
-        console.error('Error getting disposition stats:', error);
+        console.error('Error adding disposition:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+};
+
+exports.getDispositionByPhone = async (req, res) => {
+    try {
+        const { phone } = req.params;
+        const disposition = await DispositionModel.getDispositionByPhone(phone);
+
+        if (!disposition) {
+            return res.status(404).json({
+                success: false,
+                error: 'Disposition not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            disposition
+        });
+    } catch (error) {
+        console.error('Error getting disposition:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+};
+
+exports.deleteDisposition = async (req, res) => {
+    try {
+        const { phone } = req.params;
+        const success = await DispositionModel.deleteDisposition(phone);
+
+        if (!success) {
+            return res.status(404).json({
+                success: false,
+                error: 'Disposition not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            message: 'Disposition deleted successfully'
+        });
+    } catch (error) {
+        console.error('Error deleting disposition:', error);
         res.status(500).json({
             success: false,
             error: error.message
