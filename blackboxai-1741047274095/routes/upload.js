@@ -34,6 +34,7 @@ const upload = multer({
 // Routes
 router.get('/upload', uploadController.getUploadForm);
 router.post('/upload', upload.single('csvFile'), uploadController.uploadFile);
+router.post('/upload/map', uploadController.mapFields);
 router.delete('/upload/:id', uploadController.deleteUpload);
 
 module.exports = router;
