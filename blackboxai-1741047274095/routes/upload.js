@@ -1,40 +1,17 @@
 const express = require('express');
 const router = express.Router();
-const multer = require('multer');
-const path = require('path');
 const uploadController = require('../controllers/uploadController');
 
-// Configure multer for file upload
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, path.join(__dirname, '../uploads/'));
-    },
-    filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, uniqueSuffix + path.extname(file.originalname));
-    }
-});
+// GET upload form
+router.get('/', uploadController.getUploadForm);
 
-const fileFilter = (req, file, cb) => {
-    if (file.mimetype === 'text/csv' || file.originalname.toLowerCase().endsWith('.csv')) {
-        cb(null, true);
-    } else {
-        cb(new Error('Only CSV files are allowed'), false);
-    }
-};
+// POST file upload
+router.post('/', uploadController.uploadFile);
 
-const upload = multer({
-    storage: storage,
-    fileFilter: fileFilter,
-    limits: {
-        fileSize: 10 * 1024 * 1024 // 10MB limit
-    }
-});
+// GET field mapping form
+router.get('/map', uploadController.getMapFields);
 
-// Routes
-router.get('/upload', uploadController.getUploadForm);
-router.post('/upload', upload.single('csvFile'), uploadController.uploadFile);
-router.post('/upload/map', uploadController.mapFields);
-router.delete('/upload/:id', uploadController.deleteUpload);
+// POST field mapping
+router.post('/map', uploadController.processMapping);
 
 module.exports = router;
