@@ -36,10 +36,12 @@ class DownloadModel {
 
     static async getFilteredData({
         zipCodes = [],
+        cities = [],
+        counties = [],
+        regions = [],
+        vendorName = null,
         includeDispositions = [],
-        excludeDispositions = [],
-        startDate,
-        endDate
+        excludeDispositions = []
     }) {
         const connection = await db.getConnection();
         try {
@@ -58,20 +60,31 @@ class DownloadModel {
             `;
             const params = [];
 
-            // Add ZIP code filter
+            // Add geographic filters
             if (zipCodes.length > 0) {
                 query += ' AND m.zipcode IN (?)';
                 params.push(zipCodes);
             }
 
-            // Add date range filter
-            if (startDate) {
-                query += ' AND m.created_at >= ?';
-                params.push(startDate);
+            if (cities.length > 0) {
+                query += ' AND m.city IN (?)';
+                params.push(cities);
             }
-            if (endDate) {
-                query += ' AND m.created_at <= ?';
-                params.push(endDate);
+
+            if (counties.length > 0) {
+                query += ' AND m.county IN (?)';
+                params.push(counties);
+            }
+
+            if (regions.length > 0) {
+                query += ' AND m.region IN (?)';
+                params.push(regions);
+            }
+
+            // Add vendor filter
+            if (vendorName) {
+                query += ' AND m.vendor_name = ?';
+                params.push(vendorName);
             }
 
             // Add disposition filters
