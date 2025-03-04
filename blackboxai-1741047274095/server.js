@@ -3,6 +3,8 @@ const path = require('path');
 const expressLayouts = require('express-ejs-layouts');
 const uploadRouter = require('./routes/upload');
 const dashboardRouter = require('./routes/dashboard');
+const downloadRouter = require('./routes/download');
+const dispositionsRouter = require('./routes/dispositions'); // Add dispositions router
 const db = require('./config/db');
 
 const app = express();
@@ -11,9 +13,10 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static files from the public directory
-app.use('/public', express.static(path.join(__dirname, 'public')));
+// Serve static files
+app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/sample.csv', express.static(path.join(__dirname, 'sample.csv')));
 
 // View engine setup
 app.set('view engine', 'ejs');
@@ -38,8 +41,11 @@ app.get('/', (req, res) => {
     });
 });
 
+// Mount routers
 app.use('/', uploadRouter);
 app.use('/', dashboardRouter);
+app.use('/', downloadRouter);
+app.use('/', dispositionsRouter); // Mount dispositions routes
 
 // Error handling middleware
 app.use((err, req, res, next) => {
