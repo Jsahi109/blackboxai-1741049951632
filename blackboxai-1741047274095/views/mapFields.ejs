@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Map Fields - Data Management System</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/css/main.css">
+</head>
+<body>
+    <div class="container">
+        <h1 class="mt-5 mb-4">Map CSV Fields to Database Fields</h1>
+        
+        <!-- Data Preview -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Data Preview (First 5 rows)</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <% headers.forEach(header => { %>
+                                    <th><%= header %></th>
+                                <% }); %>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% results.forEach(row => { %>
+                                <tr>
+                                    <% headers.forEach(header => { %>
+                                        <td><%= row[header] %></td>
+                                    <% }); %>
+                                </tr>
+                            <% }); %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Field Mapping Form -->
+        <form id="mappingForm" class="mb-5">
+            <input type="hidden" id="vendorName" value="<%= vendorName %>">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Map Fields</h5>
+                </div>
+                <div class="card-body">
+                    <% columnNames.forEach(dbField => { %>
+                        <div class="form-group row">
+                            <label class="col-sm-3 col-form-label">
+                                <%= dbField %>:
+                            </label>
+                            <div class="col-sm-9">
+                                <select name="<%= dbField %>" class="form-control" required>
+                                    <option value="">Select CSV field</option>
+                                    <% headers.forEach(header => { %>
+                                        <option value="<%= header %>"><%= header %></option>
+                                    <% }); %>
+                                </select>
+                            </div>
+                        </div>
+                    <% }); %>
+                </div>
+                <div class="card-footer">
+                    <button type="submit" class="btn btn-primary">Process Data</button>
+                    <a href="/" class="btn btn-secondary ml-2">Cancel</a>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            $('#mappingForm').on('submit', function(e) {
+                e.preventDefault();
+                
+                const mapping = {};
+                $(this).find('select').each(function() {
+                    const dbField = $(this).attr('name');
+                    const csvField = $(this).val();
+                    if (csvField) {
+                        mapping[dbField] = csvField;
+                    }
+                });
+
+                const data = {
+                    mapping: mapping,
+                    vendorName: $('#vendorName').val(),
+                    filePath: '<%= filePath %>'
+                };
+
+                // Disable form while processing
+                const submitBtn = $(this).find('button[type="submit"]');
+                const originalText = submitBtn.text();
+                submitBtn.prop('disabled', true).text('Processing...');
+
+                $.ajax({
+                    url: '/process-mapping',
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(data),
+                    success: function(response) {
+                        alert(response.message);
+                        if (response.success) {
+                            window.location.href = '/';
+                        } else {
+                            submitBtn.prop('disabled', false).text(originalText);
+                        }
+                    },
+                    error: function(xhr) {
+                        alert('Error processing data: ' + xhr.responseText);
+                        submitBtn.prop('disabled', false).text(originalText);
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
