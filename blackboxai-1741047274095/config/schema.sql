@@ -1,5 +1,12 @@
+-- Drop tables in reverse order of dependencies
+DROP TABLE IF EXISTS dispositions;
+DROP TABLE IF EXISTS disposition_types;
+DROP TABLE IF EXISTS downloads_history;
+DROP TABLE IF EXISTS uploaded_files;
+DROP TABLE IF EXISTS master;
+
 -- Create master table
-CREATE TABLE IF NOT EXISTS master (
+CREATE TABLE master (
     id INT AUTO_INCREMENT PRIMARY KEY,
     first_name VARCHAR(100),
     last_name VARCHAR(100),
@@ -9,13 +16,14 @@ CREATE TABLE IF NOT EXISTS master (
     phone4 VARCHAR(20),
     address1 VARCHAR(255),
     address2 VARCHAR(255),
+    email VARCHAR(255),
     city VARCHAR(100),
     state VARCHAR(50),
     county VARCHAR(100),
     region VARCHAR(100),
     zipcode VARCHAR(20),
-    lat DECIMAL(10, 8),
-    lon DECIMAL(11, 8),
+    lat DECIMAL(10,8),
+    lon DECIMAL(11,8),
     vendor_name VARCHAR(100),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -31,7 +39,7 @@ CREATE TABLE IF NOT EXISTS master (
 );
 
 -- Create disposition types table
-CREATE TABLE IF NOT EXISTS disposition_types (
+CREATE TABLE disposition_types (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(50) UNIQUE NOT NULL,
     description TEXT,
@@ -41,7 +49,7 @@ CREATE TABLE IF NOT EXISTS disposition_types (
 );
 
 -- Create dispositions table
-CREATE TABLE IF NOT EXISTS dispositions (
+CREATE TABLE dispositions (
     id INT AUTO_INCREMENT PRIMARY KEY,
     phone_number VARCHAR(20) NOT NULL,
     disposition_type VARCHAR(50) NOT NULL,
@@ -54,7 +62,7 @@ CREATE TABLE IF NOT EXISTS dispositions (
 );
 
 -- Create downloads history table
-CREATE TABLE IF NOT EXISTS downloads_history (
+CREATE TABLE downloads_history (
     id INT AUTO_INCREMENT PRIMARY KEY,
     file_name VARCHAR(255) NOT NULL,
     record_count INT NOT NULL,
@@ -64,7 +72,7 @@ CREATE TABLE IF NOT EXISTS downloads_history (
 );
 
 -- Create uploaded files table
-CREATE TABLE IF NOT EXISTS uploaded_files (
+CREATE TABLE uploaded_files (
     id INT AUTO_INCREMENT PRIMARY KEY,
     filename VARCHAR(255) NOT NULL,
     vendor_name VARCHAR(100) NOT NULL,
@@ -86,40 +94,7 @@ CREATE TABLE IF NOT EXISTS uploaded_files (
     INDEX idx_upload_date (upload_date)
 );
 
--- Drop and recreate master table to update schema
-DROP TABLE IF EXISTS master;
-CREATE TABLE master (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    first_name VARCHAR(100),
-    last_name VARCHAR(100),
-    phone1 VARCHAR(20),
-    phone2 VARCHAR(20),
-    phone3 VARCHAR(20),
-    phone4 VARCHAR(20),
-    address1 VARCHAR(255),
-    address2 VARCHAR(255),
-    city VARCHAR(100),
-    state VARCHAR(50),
-    county VARCHAR(100),
-    region VARCHAR(100),
-    zipcode VARCHAR(20),
-    lat DECIMAL(10, 8),
-    lon DECIMAL(11, 8),
-    vendor_name VARCHAR(100),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX idx_phone1 (phone1),
-    INDEX idx_phone2 (phone2),
-    INDEX idx_phone3 (phone3),
-    INDEX idx_phone4 (phone4),
-    INDEX idx_zipcode (zipcode),
-    INDEX idx_city (city),
-    INDEX idx_county (county),
-    INDEX idx_region (region),
-    INDEX idx_vendor (vendor_name)
-);
-
--- Insert default disposition types if they don't exist
+-- Insert default disposition types
 INSERT IGNORE INTO disposition_types (name, description) VALUES
 ('DNC', 'Do Not Call'),
 ('Callback', 'Contact requested callback'),
