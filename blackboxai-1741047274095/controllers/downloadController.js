@@ -1,8 +1,8 @@
 const fs = require('fs').promises;
-const path = require('path');
 const { stringify } = require('csv-stringify/sync');
 const DownloadModel = require('../models/downloadModel');
 const DispositionModel = require('../models/dispositionModel');
+const MasterModel = require('../models/masterModel');
 
 exports.getDownloadForm = async (req, res) => {
     try {
@@ -12,10 +12,14 @@ exports.getDownloadForm = async (req, res) => {
         // Get recent downloads history
         const downloadHistory = await DownloadModel.getDownloadHistory(10);
 
+        // Get unique vendors
+        const vendors = await MasterModel.getUniqueVendors();
+
         res.render('download', {
             layout: 'layouts/main',
             dispositionTypes,
             downloadHistory,
+            vendors,
             error: null
         });
     } catch (error) {
@@ -33,10 +37,12 @@ exports.downloadData = async (req, res) => {
         const {
             fileName,
             zipCodes,
+            cities,
+            counties,
+            regions,
+            vendorName,
             dispositionAction,
-            dispositions,
-            startDate,
-            endDate
+            dispositions
         } = req.body;
 
         // Validate required fields
@@ -44,8 +50,14 @@ exports.downloadData = async (req, res) => {
             throw new Error('File name is required');
         }
 
-        // Process zip codes
-        const processedZipCodes = zipCodes ? zipCodes.split(',').map(zip => zip.trim()) : [];
+        // Process geographic filters
+        const filters = {
+            zipCodes: zipCodes ? zipCodes.split(',').map(zip => zip.trim()) : [],
+            cities: cities ? cities.split(',').map(city => city.trim()) : [],
+            counties: counties ? counties.split(',').map(county => county.trim()) : [],
+            regions: regions ? regions.split(',').map(region => region.trim()) : [],
+            vendorName: vendorName || null
+        };
 
         // Process dispositions based on action
         const includeDispositions = dispositionAction === 'include' ? dispositions || [] : [];
@@ -53,11 +65,9 @@ exports.downloadData = async (req, res) => {
 
         // Get filtered data
         const records = await DownloadModel.getFilteredData({
-            zipCodes: processedZipCodes,
+            ...filters,
             includeDispositions,
-            excludeDispositions,
-            startDate,
-            endDate
+            excludeDispositions
         });
 
         if (records.length === 0) {
@@ -90,11 +100,9 @@ exports.downloadData = async (req, res) => {
             fileName,
             records.length,
             {
-                zipCodes: processedZipCodes,
+                ...filters,
                 dispositionAction,
-                dispositions,
-                startDate,
-                endDate
+                dispositions
             },
             'system' // TODO: Replace with actual user ID when authentication is implemented
         );
@@ -127,11 +135,13 @@ exports.redownload = async (req, res) => {
 
         // Get filtered data using saved filters
         const records = await DownloadModel.getFilteredData({
-            zipCodes: download.filters.zipCodes,
+            zipCodes: download.filters.zipCodes || [],
+            cities: download.filters.cities || [],
+            counties: download.filters.counties || [],
+            regions: download.filters.regions || [],
+            vendorName: download.filters.vendorName,
             includeDispositions: download.filters.dispositionAction === 'include' ? download.filters.dispositions : [],
-            excludeDispositions: download.filters.dispositionAction === 'exclude' ? download.filters.dispositions : [],
-            startDate: download.filters.startDate,
-            endDate: download.filters.endDate
+            excludeDispositions: download.filters.dispositionAction === 'exclude' ? download.filters.dispositions : []
         });
 
         if (records.length === 0) {
