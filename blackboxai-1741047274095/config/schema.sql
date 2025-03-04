@@ -1,0 +1,23 @@
+CREATE TABLE IF NOT EXISTS master (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    vendor_name VARCHAR(255) NOT NULL,
+    first_name VARCHAR(255),
+    last_name VARCHAR(255),
+    phone1 VARCHAR(20),
+    phone2 VARCHAR(20),
+    phone3 VARCHAR(20),
+    phone4 VARCHAR(20),
+    address1 VARCHAR(255),
+    address2 VARCHAR(255),
+    city VARCHAR(100),
+    state VARCHAR(50),
+    region VARCHAR(100),
+    zipcode VARCHAR(20),
+    lat DECIMAL(10, 8),
+    lon DECIMAL(11, 8),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_vendor (vendor_name),
+    INDEX idx_location (city, state, region),
+    INDEX idx_name (first_name, last_name)
+);
