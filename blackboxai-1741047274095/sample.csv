@@ -1,3 +1,4 @@
-Name,Surname,Contact Number,Alt Phone,Emergency Phone,Work Phone,Home Address,Office Address,Longitude,Latitude,Company
-John,Doe,+1234567890,+1987654321,+1122334455,+1555666777,123 Home St,456 Office Ave,-73.935242,40.730610,Test Vendor
-Jane,Smith,+1444555666,+1777888999,+1000111222,+1333444555,789 Home Rd,321 Work Blvd,-74.006015,40.712776,Test Vendor
+First Name,Last Name,Phone1,Phone2,Phone3,Phone4,Address1,Address2,City,State,Region,Zipcode,Lat,Lon
+John,Doe,123-456-7890,,,,"123 Main St",Suite 100,San Francisco,CA,Bay Area,94105,37.7749,-122.4194
+Jane,Smith,987-654-3210,,,,"456 Market St",,San Francisco,CA,Bay Area,94103,37.7790,-122.4130
+Michael,Johnson,555-123-4567,,,,"789 Mission St",Floor 3,San Francisco,CA,Bay Area,94107,37.7860,-122.4010
